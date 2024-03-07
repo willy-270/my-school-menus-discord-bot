@@ -54,9 +54,3 @@ async def self(
         return
     await interaction.response.send_message("Shutting down...", ephemeral=True)
     await client.bot.close()
-
-
-@client.bot.event 
-async def on_message(message):
-    if message.channel.id == MEALS_CHANNEL_ID:
-        client.msgs_in_meal_logs.append(message)

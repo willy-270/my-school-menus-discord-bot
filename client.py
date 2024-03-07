@@ -7,16 +7,28 @@ from discord.ext import commands
 
 bot = commands.Bot(command_prefix='!', intents=discord.Intents.all())
 
+@bot.event
+async def on_ready():
+    print('Bot is ready')
+    try:
+        synced = await bot.tree.sync()
+        print(f"Synced {len(synced)} command(s)")
+    except Exception as e:
+        print(e)
+
+    send_meals_loop.start()
+
+def run():
+    bot.run(BOT_TOKEN)
+
+
 tz = datetime.datetime.now().astimezone().tzinfo     # local timezone
 time = datetime.time(hour=6, minute=0, second=0, microsecond=0, tzinfo=tz)
 
-msgs_in_meal_logs = []
-
 @tasks.loop(time=time)
 async def send_meals_loop():
-    for message in msgs_in_meal_logs:
-        await message.delete()
-    msgs_in_meal_logs.clear()
+    channel = bot.get_channel(MEALS_CHANNEL_ID)
+    await channel.purge(limit=100)
     
     today = datetime.datetime.now().date()
     tommorow = today + datetime.timedelta(days=1)
@@ -48,21 +60,5 @@ async def send_meals_loop():
     tommorows_lunch_embed = make_meal_embed(tommorows_lunch, True, True)
     tommorows_breakfast_embed = make_meal_embed(tommorows_breakfast, False, True)
 
-    channel = bot.get_channel(MEALS_CHANNEL_ID)
-
     await channel.send(content= "# Today's Meals", embeds=[lunch_embed, breakfast_embed])
     await channel.send(content= "# Tommorow's Meals", embeds=[tommorows_lunch_embed, tommorows_breakfast_embed])
-
-@bot.event
-async def on_ready():
-    print('Bot is ready')
-    try:
-        synced = await bot.tree.sync()
-        print(f"Synced {len(synced)} command(s)")
-    except Exception as e:
-        print(e)
-
-    send_meals_loop.start()
-
-def run():
-    bot.run(BOT_TOKEN)
