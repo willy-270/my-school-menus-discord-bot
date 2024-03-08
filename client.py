@@ -1,6 +1,5 @@
 from discord.ext import commands
 from consts import BOT_TOKEN
-from commands import send_meals_loop
 import discord
 
 
@@ -15,6 +14,7 @@ async def on_ready():
     except Exception as e:
         print(e)
 
+    from commands import send_meals_loop
     send_meals_loop.start()
 
 def run():

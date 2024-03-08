@@ -7,7 +7,7 @@ class Meal:
     def __init__(self, desc: str, date: datetime, is_lunch: bool):
         self.desc = desc
         self.date = date
-        self.lunch = is_lunch
+        self.is_lunch = is_lunch
 
 class Month_Menu:
     def __init__(self, is_lunch: bool):

@@ -1,32 +1,34 @@
 from discord.ext import tasks
 from discord import app_commands
-from datetime import datetime
+import datetime
 import meals
 import discord
 import client
 from consts import OWNER_ID, MEALS_CHANNEL_ID
 
 def make_meal_embed(meal: meals.Meal):
-        if meal is None:
-            return None
+    if meal is None:
+        return None
         
-        stlyized_desc = meal.desc
+    italic_lines = ["Or", "With", "Fruit", "Milk"]
+    meal_desc_lines = meal.desc.split("\n")
 
-        italic_words = ["Or", "With", "Fruit", "Milk"]
-        meal_desc_lines = meal.desc.split("\n")
+    for i, line in enumerate(meal_desc_lines):
+        if line == "":
+            pass
+        elif line in italic_lines:
+            meal_desc_lines[i] = f"*{line}*"
+        else:
+            meal_desc_lines[i] = f"**{line}**"
 
-        for line in meal_desc_lines:
-            if line in italic_words:
-                stlyized_desc = stlyized_desc.replace(line, f"*{line}*")
-            else:
-                stlyized_desc = stlyized_desc.replace(line, f"**{line}**")
+    stlyized_desc = "\n".join(meal_desc_lines)
 
-        embed = discord.Embed()
-        embed.title = f"{'Lunch' if meal.is_lunch else 'Breakfast'}, {meal.date.strftime('%m/%d/%Y')}"
-        embed.color = discord.Color.green() if meal.is_lunch else discord.Color.blue()
-        embed.description = meal.desc
-    
-        return embed
+    embed = discord.Embed()
+    embed.title = f"***{'Lunch' if meal.is_lunch else 'Breakfast'}, {meal.date.strftime('%m/%d/%Y')}***"
+    embed.color = discord.Color.green() if meal.is_lunch else discord.Color.blue()
+    embed.description = stlyized_desc
+
+    return embed
 
 @client.bot.tree.command(
     name = "get_meals_by_date",
@@ -41,7 +43,7 @@ async def self(
     await interaction.response.send_message("Getting...", ephemeral=False)
 
     try:
-        date = datetime.fromisoformat(date).date()
+        date = datetime.datetime.fromisoformat(date).date()
     except Exception as e:
         await interaction.edit_original_response(content=f"you probably didn't use iso format, {e}")
         return
@@ -53,15 +55,8 @@ async def self(
         await interaction.edit_original_response(content="No meals found for that date!")
         return
 
-    lunch_embed = discord.Embed()
-    lunch_embed.title = f"Lunch, {lunch.date.strftime('%m/%d/%Y')}"
-    lunch_embed.description = lunch.desc
-    lunch_embed.color = discord.Color.blue()
-
-    breakfast_embed = discord.Embed()
-    breakfast_embed.title = f"Breakfast, {breakfast.date.strftime('%m/%d/%Y')}"
-    breakfast_embed.description = breakfast.desc
-    breakfast_embed.color = discord.Color.yellow()
+    lunch_embed = make_meal_embed(lunch)
+    breakfast_embed = make_meal_embed(breakfast)
 
     await interaction.edit_original_response(embeds=[lunch_embed, breakfast_embed], content="")
 
@@ -105,3 +100,5 @@ async def send_meals_loop():
 
     if tmr_embeds is not [None, None]:
         await log_channel.send(content= "# Tommorow's Meals", embeds=[tmr_lunch_embed, tmr_breakfast_embed])
+
+make_meal_embed(meals.get_todays_meal(True))
