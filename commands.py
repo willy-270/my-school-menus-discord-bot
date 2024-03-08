@@ -91,8 +91,8 @@ async def send_meals_loop():
     today = datetime.datetime.now().date()
     tmr = today + datetime.timedelta(days=1)
 
-    td_lunch_embed = await make_meal_embed(meals.get_td_meal(True))
-    td_breakfast_embed = await make_meal_embed(meals.get_td_meal(False))
+    td_lunch_embed = await make_meal_embed(meals.get_todays_meal(True))
+    td_breakfast_embed = await make_meal_embed(meals.get_todays_meal(False))
     td_embeds = [td_lunch_embed, td_breakfast_embed]
     
     tmr_lunch_embed = await make_meal_embed(meals.get_meal_by_date(tmr, True))
