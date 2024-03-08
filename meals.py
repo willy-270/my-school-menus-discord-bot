@@ -1,7 +1,7 @@
 from datetime import datetime
-from my_school_menus.api import Menus
 import json
-from .consts import DISTRICT_ID, LUNCH_MENU_ID, BREAKFAST_MENU_ID
+import requests
+from consts import DISTRICT_ID, LUNCH_MENU_ID, BREAKFAST_MENU_ID
 
 
 class Meal:
@@ -48,12 +48,23 @@ class Month_Menu:
         return meals
     
     def get_month_raw(self, lucnh: bool):
-        menus = Menus()
+        def get(district_id: int, menu_id: int = None, date: datetime.date = None) -> dict:
+            url = f"https://myschoolmenus.com/api/public/menus/{menu_id}"
+
+            if date:
+                url = url + f"?menu_month={date.strftime('%Y-%m-01')}"
+
+            r = requests.get(
+                url=url,
+                headers={'x-district': str(district_id)}
+            )
+
+            return r.json()
 
         if lucnh is True:
-            menu = menus.get(district_id=DISTRICT_ID, menu_id=LUNCH_MENU_ID)
+            menu = get(district_id=DISTRICT_ID, menu_id=LUNCH_MENU_ID)
         else:
-            menu = menus.get(district_id=DISTRICT_ID, menu_id=BREAKFAST_MENU_ID)
+            menu = get(district_id=DISTRICT_ID, menu_id=BREAKFAST_MENU_ID)
 
         menu_month_calendar = menu['data']['menu_month_calendar']
         return menu_month_calendar
@@ -73,7 +84,9 @@ def get_meal_by_date(date, is_lunch: bool) -> Meal:
     for meal in menu.meals:
         if meal.date == date:
             return meal
-        
+    
     return None
+
+print(get_meal_by_date(datetime.now().date(), True).desc)
 
 

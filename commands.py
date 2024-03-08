@@ -1,9 +1,32 @@
-from datetime import datetime
-from lunch import meals
+from discord.ext import tasks
 from discord import app_commands
+from datetime import datetime
+from . import meals
 import discord
 import client
 from consts import OWNER_ID, MEALS_CHANNEL_ID
+
+def make_meal_embed(meal: meals.Meal):
+        if meal is None:
+            return None
+        
+        stlyized_desc = meal.desc
+
+        italic_words = ["Or", "With", "Fruit", "Milk"]
+        meal_desc_lines = meal.desc.split("\n")
+
+        for line in meal_desc_lines:
+            if line in italic_words:
+                stlyized_desc = stlyized_desc.replace(line, f"*{line}*")
+            else:
+                stlyized_desc = stlyized_desc.replace(line, f"**{line}**")
+
+        embed = discord.Embed()
+        embed.title = f"{'Lunch' if meal.is_lunch else 'Breakfast'}, {meal.date.strftime('%m/%d/%Y')}"
+        embed.color = discord.Color.green() if meal.is_lunch else discord.Color.blue()
+        embed.description = meal.desc
+    
+        return embed
 
 @client.bot.tree.command(
     name = "get_meals_by_date",
@@ -54,3 +77,31 @@ async def self(
         return
     await interaction.response.send_message("Shutting down...", ephemeral=True)
     await client.bot.close()
+
+tz = datetime.datetime.now().astimezone().tzinfo     # local timezone
+time = datetime.time(hour=6, minute=0, second=0, microsecond=0, tzinfo=tz)
+
+@tasks.loop(time=time)
+async def send_meals_loop():
+    today = datetime.datetime.now().date()
+    tmr = today + datetime.timedelta(days=1)
+
+    td_lunch_embed = make_meal_embed(meals.get_td_meal(True))
+    td_breakfast_embed = make_meal_embed(meals.get_td_meal(False))
+    td_embeds = [td_lunch_embed, td_breakfast_embed]
+    
+    tmr_lunch_embed = make_meal_embed(meals.get_meal_by_date(tmr, True))
+    tmr_breakfast_embed = make_meal_embed(meals.get_meal_by_date(tmr, False))
+    tmr_embeds = [tmr_lunch_embed, tmr_breakfast_embed]
+
+    if td_embeds is [None, None] and tmr_embeds is [None, None]:
+        return
+
+    log_channel = client.bot.get_channel(MEALS_CHANNEL_ID)
+    await log_channel.purge(limit=100)
+
+    if td_embeds is not [None, None]:
+        await log_channel.send(content= "# Today's Meals", embeds=[td_lunch_embed, td_breakfast_embed])
+
+    if tmr_embeds is not [None, None]:
+        await log_channel.send(content= "# Tommorow's Meals", embeds=[tmr_lunch_embed, tmr_breakfast_embed])
