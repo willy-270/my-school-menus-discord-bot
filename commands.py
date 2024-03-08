@@ -5,13 +5,20 @@ import meals
 import discord
 import client
 from consts import OWNER_ID, MEALS_CHANNEL_ID
+from google_images_download import google_images_download
 
-def make_meal_embed(meal: meals.Meal):
+async def make_meal_embed(meal: meals.Meal):
     if meal is None:
         return None
         
-    italic_lines = ["Or", "With", "Fruit", "Milk"]
     meal_desc_lines = meal.desc.split("\n")
+
+    response = google_images_download.googleimagesdownload()
+    arguments = {"keywords": meal_desc_lines[0], "limit":1, "no_download":True} 
+    r = response.download(arguments)
+    img_url = list(r[0].values())[0][0]
+
+    italic_lines = ["Or", "With", "Fruit", "Milk"]
 
     for i, line in enumerate(meal_desc_lines):
         if line == "":
@@ -24,10 +31,11 @@ def make_meal_embed(meal: meals.Meal):
     stlyized_desc = "\n".join(meal_desc_lines)
 
     embed = discord.Embed()
+    embed.set_image(url=img_url)
     embed.title = f"***{'Lunch' if meal.is_lunch else 'Breakfast'}, {meal.date.strftime('%m/%d/%Y')}***"
     embed.color = discord.Color.green() if meal.is_lunch else discord.Color.blue()
     embed.description = stlyized_desc
-
+    
     return embed
 
 @client.bot.tree.command(
@@ -55,8 +63,10 @@ async def self(
         await interaction.edit_original_response(content="No meals found for that date!")
         return
 
-    lunch_embed = make_meal_embed(lunch)
-    breakfast_embed = make_meal_embed(breakfast)
+    interaction.edit_original_response(content="Making embeds & getting images...")
+
+    lunch_embed = await make_meal_embed(lunch)
+    breakfast_embed = await make_meal_embed(breakfast)
 
     await interaction.edit_original_response(embeds=[lunch_embed, breakfast_embed], content="")
 
@@ -81,12 +91,12 @@ async def send_meals_loop():
     today = datetime.datetime.now().date()
     tmr = today + datetime.timedelta(days=1)
 
-    td_lunch_embed = make_meal_embed(meals.get_td_meal(True))
-    td_breakfast_embed = make_meal_embed(meals.get_td_meal(False))
+    td_lunch_embed = await make_meal_embed(meals.get_td_meal(True))
+    td_breakfast_embed = await make_meal_embed(meals.get_td_meal(False))
     td_embeds = [td_lunch_embed, td_breakfast_embed]
     
-    tmr_lunch_embed = make_meal_embed(meals.get_meal_by_date(tmr, True))
-    tmr_breakfast_embed = make_meal_embed(meals.get_meal_by_date(tmr, False))
+    tmr_lunch_embed = await make_meal_embed(meals.get_meal_by_date(tmr, True))
+    tmr_breakfast_embed = await make_meal_embed(meals.get_meal_by_date(tmr, False))
     tmr_embeds = [tmr_lunch_embed, tmr_breakfast_embed]
 
     if td_embeds is [None, None] and tmr_embeds is [None, None]:
@@ -101,4 +111,3 @@ async def send_meals_loop():
     if tmr_embeds is not [None, None]:
         await log_channel.send(content= "# Tommorow's Meals", embeds=[tmr_lunch_embed, tmr_breakfast_embed])
 
-make_meal_embed(meals.get_todays_meal(True))
