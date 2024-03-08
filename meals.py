@@ -3,11 +3,11 @@ import json
 import requests
 from consts import DISTRICT_ID, LUNCH_MENU_ID, BREAKFAST_MENU_ID
 
-
 class Meal:
-    def __init__(self, desc: str, date: datetime):
+    def __init__(self, desc: str, date: datetime, is_lunch: bool):
         self.desc = desc
         self.date = date
+        self.lunch = is_lunch
 
 class Month_Menu:
     def __init__(self, is_lunch: bool):
@@ -42,7 +42,7 @@ class Month_Menu:
             except KeyError:
                 continue
 
-            meal = Meal(description, datetime.fromisoformat(entry['day']).date())
+            meal = Meal(description, datetime.fromisoformat(entry['day']).date(), self.is_lunch)
             meals.append(meal)
         
         return meals
@@ -78,7 +78,7 @@ def get_todays_meal(is_lunch: bool):
         
     return None
 
-def get_meal_by_date(date, is_lunch: bool) -> Meal:
+def get_meal_by_date(date: datetime.date, is_lunch: bool) -> Meal:
     menu = Month_Menu(is_lunch)
 
     for meal in menu.meals:
@@ -86,7 +86,4 @@ def get_meal_by_date(date, is_lunch: bool) -> Meal:
             return meal
     
     return None
-
-print(get_meal_by_date(datetime.now().date(), True).desc)
-
 

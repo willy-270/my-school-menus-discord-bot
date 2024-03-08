@@ -1,7 +1,7 @@
 from discord.ext import tasks
 from discord import app_commands
 from datetime import datetime
-from . import meals
+import meals
 import discord
 import client
 from consts import OWNER_ID, MEALS_CHANNEL_ID
