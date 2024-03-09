@@ -20,4 +20,3 @@ async def on_ready():
 def run():
     bot.run(BOT_TOKEN)
 
-
