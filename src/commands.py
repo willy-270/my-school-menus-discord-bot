@@ -93,7 +93,7 @@ async def self(
     await client.bot.close()
 
 tz = datetime.datetime.now().astimezone().tzinfo     # local timezone
-time = datetime.time(hour=6, minute=0, second=0, microsecond=0, tzinfo=tz)
+time = datetime.time(hour=12, minute=0, second=0, microsecond=0, tzinfo=tz)
 
 @tasks.loop(time=time)
 async def send_meals_loop():
@@ -107,13 +107,13 @@ async def send_meals_loop():
     tmr_breakfast_embed = await make_meal_embed(meals.get_meal_by_date(tmr, False))
     tmr_embeds = [tmr_lunch_embed, tmr_breakfast_embed]
 
-    if td_embeds is [None, None] and tmr_embeds is [None, None]:
+    if td_embeds == [None, None] and tmr_embeds == [None, None]:
         return
 
     log_channel = client.bot.get_channel(MEALS_CHANNEL_ID)
     await log_channel.purge(limit=100)
 
-    if td_embeds is not [None, None]:
+    if td_embeds != [None, None]:
         await log_channel.send(content="# Today's Meals:")
         await log_channel.send(embed=td_lunch_embed["embed"], file=td_lunch_embed["file"])
         await log_channel.send(embed=td_breakfast_embed["embed"], file=td_breakfast_embed["file"])
@@ -121,7 +121,7 @@ async def send_meals_loop():
         os.remove(td_lunch_embed["path"])
         os.remove(td_breakfast_embed["path"])
 
-    if tmr_embeds is not [None, None]:
+    if tmr_embeds != [None, None]:
         await log_channel.send(content="# Tomorrow's Meals:")
         await log_channel.send(embed=tmr_lunch_embed["embed"], file=tmr_lunch_embed["file"])
         await log_channel.send(embed=tmr_breakfast_embed["embed"], file=tmr_breakfast_embed["file"])

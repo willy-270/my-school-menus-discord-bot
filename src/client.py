@@ -14,6 +14,7 @@ async def on_ready():
     except Exception as e:
         print(e)
 
+    #yeah i hate this import here idk how else to do it tho
     from commands import send_meals_loop
     send_meals_loop.start()
 
