@@ -9,4 +9,4 @@ RUN cd google-images-download && python setup.py install
 
 COPY . .
 
-CMD ["python", "main.py"]
+CMD ["python", "src/main.py"]

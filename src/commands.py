@@ -55,7 +55,7 @@ async def self(
     try:
         date = datetime.datetime.fromisoformat(date).date()
     except Exception as e:
-        await interaction.edit_original_response(content=f"you probably didn't use iso format, {e}")
+        await interaction.edit_original_response(content=f"you probably didn't use valid iso format")
         return
 
     lunch = meals.get_meal_by_date(date, True)
@@ -128,10 +128,3 @@ async def send_meals_loop():
 
         os.remove(tmr_lunch_embed["path"])
         os.remove(tmr_breakfast_embed["path"])
-
-async def test():
-    await make_meal_embed(meals.get_meal_by_date(datetime.datetime.fromisoformat("2024-03-08").date(), True))
-    await make_meal_embed(meals.get_meal_by_date(datetime.datetime.fromisoformat("2024-03-08").date(), False))
-
-
-
