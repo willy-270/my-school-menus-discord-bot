@@ -5,7 +5,6 @@ import pytz
 import meals
 import discord
 import client
-from consts import OWNER_ID, MEALS_CHANNEL_ID
 import db
 from google_images_download import google_images_download
 import os
@@ -90,23 +89,25 @@ async def self(
 async def self(
     interaction: discord.Interaction,
     channel_to_send_meals: discord.TextChannel,
-    attach_images: bool,
-    timezone: str = None
+    timezone: str
 ):
     await interaction.response.send_message("Saving changes...", ephemeral=False)
 
-    conn = await db.Database().connect()
-    await db.Database().insert_config_values(conn, (interaction.guild.id, channel_to_send_meals.id, int(attach_images), timezone))
+    database = db.Database()
+    conn = await database.connect()
+    await database.insert_config_values(conn, [interaction.guild_id, channel_to_send_meals.id, timezone])
+    await conn.close()
 
     await interaction.edit_original_response(content="Done!")
 
 async def get_server_config(guild_id):
-    conn = await db.Database().connect()
-    result = await db.Database().get_config_values(conn, guild_id)
+    database = db.Database()
+    conn = await database.connect()
+    values = await database.get_config_values(conn, guild_id)
     await conn.close()
-    return result
+    return values
 
-async def get_and_send_meals(log_channel_id: discord.TextChannel, attach_images: bool):
+async def get_and_send_meals(log_channel_id: discord.TextChannel):
     log_channel = client.bot.get_channel(log_channel_id)
     await log_channel.purge(limit=100)
 
@@ -139,28 +140,27 @@ async def get_and_send_meals(log_channel_id: discord.TextChannel, attach_images:
         os.remove(tmr_lunch_embed["path"])
         os.remove(tmr_breakfast_embed["path"])
 
-tz = datetime.datetime.now().astimezone().tzinfo
-time = datetime.time(hour=7, minute=0, second=0, microsecond=0, tzinfo=tz)
-
 @tasks.loop(seconds=60)
 async def send_meals_loop():
     conn = await db.Database().connect()
     cursor = await conn.cursor()
     await cursor.execute("SELECT server_id FROM servers")
     guilds = await cursor.fetchall()
-    conn.close()
+    await conn.close()
 
     for guild_id in guilds:
-        server_settings = await get_server_config(guild_id)
+        server_settings = await get_server_config(guild_id[0])
         if server_settings:
-            channel_id, send_images, timezone = server_settings
+            channel_id, timezone = server_settings
             tz = pytz.timezone(timezone) if timezone else pytz.utc
 
             now = datetime.datetime.now(tz)
-            desired_time = datetime.time(hour=7, minute=0, second=0, microsecond=0, tzinfo=tz)
+            desired_time = datetime.time(hour=7, minute=0, tzinfo=tz)
 
-            if now.time() == desired_time:
-                await get_and_send_meals(channel_id, send_images)
+            if now.hour == desired_time.hour and now.minute == desired_time.minute:
+                print(f"sending meals to {guild_id[0]}...")
+
+                await get_and_send_meals(channel_id)
 
 
    
