@@ -1,4 +1,3 @@
-import asyncio
 import aiosqlite
 
 class Database:
