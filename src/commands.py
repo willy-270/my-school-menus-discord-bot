@@ -1,10 +1,13 @@
 from discord.ext import tasks
 from discord import app_commands
 import datetime
+
+import pytz
 import meals
 import discord
 import client
 from consts import OWNER_ID, MEALS_CHANNEL_ID
+import db
 from google_images_download import google_images_download
 import os
 
@@ -78,25 +81,36 @@ async def self(
 
     await interaction.edit_original_response(content="Done!")
     
-
 @client.bot.tree.command(
-    name = "shutdown",
-    description = "yep",
+    name = "config",
+    description = "congigure the bot"
+)
+@app_commands.describe(
+    timezone="use this format please: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones#List, Ex: America/New_York",
 )
 async def self(
     interaction: discord.Interaction,
+    channel_to_send_meals: discord.TextChannel,
+    attach_images: bool,
+    timezone: str = None
 ):
-    if interaction.user.id != OWNER_ID:
-        await interaction.response.send_message("You can't do that!", ephemeral=True)
-        return
-    await interaction.response.send_message("Shutting down...", ephemeral=True)
-    await client.bot.close()
+    await interaction.response.send_message("Saving changes...", ephemeral=False)
 
-tz = datetime.datetime.now().astimezone().tzinfo     # local timezone
-time = datetime.time(hour=12, minute=0, second=0, microsecond=0, tzinfo=tz)
+    conn = await db.Database().connect()
+    await db.Database().insert_config_values(conn, (interaction.guild.id, channel_to_send_meals.id, int(attach_images), timezone))
 
-@tasks.loop(time=time)
-async def send_meals_loop():
+    await interaction.edit_original_response(content="Done!")
+
+async def get_server_config(guild_id):
+    conn = await db.Database().connect()
+    result = await db.Database().get_config_values(conn, guild_id)
+    await conn.close()
+    return result
+
+async def get_and_send_meals(log_channel_id: discord.TextChannel, attach_images: bool):
+    log_channel = client.bot.get_channel(log_channel_id)
+    await log_channel.purge(limit=100)
+
     tmr = datetime.datetime.now().date() + datetime.timedelta(days=1)
 
     td_lunch_embed = await make_meal_embed(meals.get_todays_meal(True))
@@ -109,9 +123,6 @@ async def send_meals_loop():
 
     if td_embeds == [None, None] and tmr_embeds == [None, None]:
         return
-
-    log_channel = client.bot.get_channel(MEALS_CHANNEL_ID)
-    await log_channel.purge(limit=100)
 
     if td_embeds != [None, None]:
         await log_channel.send(content="# Today's Meals:")
@@ -128,3 +139,29 @@ async def send_meals_loop():
 
         os.remove(tmr_lunch_embed["path"])
         os.remove(tmr_breakfast_embed["path"])
+
+tz = datetime.datetime.now().astimezone().tzinfo
+time = datetime.time(hour=7, minute=0, second=0, microsecond=0, tzinfo=tz)
+
+@tasks.loop(seconds=60)
+async def send_meals_loop():
+    conn = await db.Database().connect()
+    cursor = await conn.cursor()
+    await cursor.execute("SELECT server_id FROM servers")
+    guilds = await cursor.fetchall()
+    conn.close()
+
+    for guild_id in guilds:
+        server_settings = await get_server_config(guild_id)
+        if server_settings:
+            channel_id, send_images, timezone = server_settings
+            tz = pytz.timezone(timezone) if timezone else pytz.utc
+
+            now = datetime.datetime.now(tz)
+            desired_time = datetime.time(hour=7, minute=0, second=0, microsecond=0, tzinfo=tz)
+
+            if now.time() == desired_time:
+                await get_and_send_meals(channel_id, send_images)
+
+
+   

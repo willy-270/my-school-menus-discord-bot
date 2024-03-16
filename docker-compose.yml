@@ -1,3 +1,5 @@
 services:
   my-school-menus-discord-bot:
     build: .
+    environment:
+      - TZ=America/Chicago
