@@ -6,23 +6,14 @@ import meals
 import discord
 import client
 import db
-from google_images_download import google_images_download
-import os
 
 async def make_meal_embed(meal: meals.Meal):
     if meal is None:
         return None
         
     meal_desc_lines = meal.desc.split("\n")
-
-    response = google_images_download.googleimagesdownload()
-    arguments = {"keywords":meal_desc_lines[0], "limit":1, "aspect_ratio": "wide", "output_directory":os.getcwd(), "no_directory":True}
-    r = response.download(arguments)
-    path = list(r[0].values())[0][0]
-    file = discord.File(path, filename="image.png")
     
     italic_lines = ["Or", "With", "Fruit", "Milk"]
-
     for i, line in enumerate(meal_desc_lines):
         if line == "":
             pass
@@ -34,12 +25,11 @@ async def make_meal_embed(meal: meals.Meal):
     stlyized_desc = "\n".join(meal_desc_lines)
 
     embed = discord.Embed()
-    embed.set_image(url=f"attachment://image.png")
     embed.title = f"***{'Lunch' if meal.is_lunch else 'Breakfast'}, {meal.date.strftime('%m/%d/%Y')}***"
     embed.color = discord.Color.green() if meal.is_lunch else discord.Color.blue()
     embed.description = stlyized_desc
     
-    return {"embed": embed, "file": file, "path": path}
+    return embed
 
 @client.bot.tree.command(
     name = "get_meals_by_date",
@@ -50,7 +40,6 @@ async def self(
     interaction: discord.Interaction,
     date: str,
 ):
-    
     await interaction.response.send_message("Getting...", ephemeral=False)
 
     try:
@@ -66,16 +55,13 @@ async def self(
         await interaction.edit_original_response(content="No meals found for that date!")
         return
 
-    await interaction.edit_original_response(content="Making embeds & getting images... (may take a while)")
+    await interaction.edit_original_response(content="Making embeds... (may take a while)")
 
     lunch_embed = await make_meal_embed(lunch)
     breakfast_embed = await make_meal_embed(breakfast)
 
-    await interaction.channel.send(embed=lunch_embed["embed"], file=lunch_embed["file"])
-    await interaction.channel.send(embed=breakfast_embed["embed"], file=breakfast_embed["file"])
-
-    os.remove(lunch_embed["path"])
-    os.remove(breakfast_embed["path"])
+    await interaction.channel.send(embed=lunch_embed)
+    await interaction.channel.send(embed=breakfast_embed)
 
     await interaction.edit_original_response(content="Done!")
     
@@ -126,19 +112,13 @@ async def get_and_send_meals(log_channel_id: discord.TextChannel):
 
     if td_embeds != [None, None]:
         await log_channel.send(content="# Today's Meals:")
-        await log_channel.send(embed=td_lunch_embed["embed"], file=td_lunch_embed["file"])
-        await log_channel.send(embed=td_breakfast_embed["embed"], file=td_breakfast_embed["file"])
-
-        os.remove(td_lunch_embed["path"])
-        os.remove(td_breakfast_embed["path"])
+        await log_channel.send(embed=td_lunch_embed)
+        await log_channel.send(embed=td_breakfast_embed)
 
     if tmr_embeds != [None, None]:
         await log_channel.send(content="# Tomorrow's Meals:")
-        await log_channel.send(embed=tmr_lunch_embed["embed"], file=tmr_lunch_embed["file"])
-        await log_channel.send(embed=tmr_breakfast_embed["embed"], file=tmr_breakfast_embed["file"])
-
-        os.remove(tmr_lunch_embed["path"])
-        os.remove(tmr_breakfast_embed["path"])
+        await log_channel.send(embed=tmr_lunch_embed)
+        await log_channel.send(embed=tmr_breakfast_embed)
 
 @tasks.loop(seconds=60)
 async def send_meals_loop():
