@@ -7,9 +7,12 @@ import discord
 import client
 import db
 
-async def make_meal_embed(meal: meals.Meal):
+def make_meal_embed(meal: meals.Meal) -> discord.Embed:
     if meal is None:
-        return None
+        embed = discord.Embed()
+        embed.title = "No meal found"
+        embed.color = discord.Color.red()
+        return embed
         
     meal_desc_lines = meal.desc.split("\n")
     
@@ -51,17 +54,19 @@ async def self(
     lunch = meals.get_meal_by_date(date, True)
     breakfast = meals.get_meal_by_date(date, False)
 
-    if lunch is None or breakfast is None:
+    if lunch == None and breakfast == None:
         await interaction.edit_original_response(content="No meals found for that date!")
         return
 
     await interaction.edit_original_response(content="Making embeds... (may take a while)")
 
-    lunch_embed = await make_meal_embed(lunch)
-    breakfast_embed = await make_meal_embed(breakfast)
+    lunch_embed = make_meal_embed(lunch)
+    breakfast_embed = make_meal_embed(breakfast)
 
-    await interaction.channel.send(embed=lunch_embed)
-    await interaction.channel.send(embed=breakfast_embed)
+    if lunch_embed:
+        await interaction.channel.send(embed=lunch_embed)
+    if breakfast_embed:
+        await interaction.channel.send(embed=breakfast_embed)
 
     await interaction.edit_original_response(content="Done!")
     
@@ -99,12 +104,12 @@ async def get_and_send_meals(log_channel_id: discord.TextChannel):
 
     tmr = datetime.datetime.now().date() + datetime.timedelta(days=1)
 
-    td_lunch_embed = await make_meal_embed(meals.get_todays_meal(True))
-    td_breakfast_embed = await make_meal_embed(meals.get_todays_meal(False))
+    td_lunch_embed = make_meal_embed(meals.get_todays_meal(True))
+    td_breakfast_embed = make_meal_embed(meals.get_todays_meal(False))
     td_embeds = [td_lunch_embed, td_breakfast_embed]
     
-    tmr_lunch_embed = await make_meal_embed(meals.get_meal_by_date(tmr, True))
-    tmr_breakfast_embed = await make_meal_embed(meals.get_meal_by_date(tmr, False))
+    tmr_lunch_embed = make_meal_embed(meals.get_meal_by_date(tmr, True))
+    tmr_breakfast_embed = make_meal_embed(meals.get_meal_by_date(tmr, False))
     tmr_embeds = [tmr_lunch_embed, tmr_breakfast_embed]
 
     if td_embeds == [None, None] and tmr_embeds == [None, None]:
@@ -112,13 +117,17 @@ async def get_and_send_meals(log_channel_id: discord.TextChannel):
 
     if td_embeds != [None, None]:
         await log_channel.send(content="# Today's Meals:")
-        await log_channel.send(embed=td_lunch_embed)
-        await log_channel.send(embed=td_breakfast_embed)
+        if td_lunch_embed:
+            await log_channel.send(embed=td_lunch_embed)
+        if td_breakfast_embed:
+            await log_channel.send(embed=td_breakfast_embed) 
 
     if tmr_embeds != [None, None]:
         await log_channel.send(content="# Tomorrow's Meals:")
-        await log_channel.send(embed=tmr_lunch_embed)
-        await log_channel.send(embed=tmr_breakfast_embed)
+        if tmr_lunch_embed:
+            await log_channel.send(embed=tmr_lunch_embed)
+        if tmr_breakfast_embed:
+            await log_channel.send(embed=tmr_breakfast_embed)
 
 @tasks.loop(seconds=60)
 async def send_meals_loop():

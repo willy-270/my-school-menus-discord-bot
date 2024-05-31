@@ -70,15 +70,9 @@ class Month_Menu:
         return menu_month_calendar
 
 def get_todays_meal(is_lunch: bool):
-    menu = Month_Menu(is_lunch)
+    return get_meal_by_date(datetime.date.now().date(), is_lunch)
 
-    for meal in menu.meals:
-        if meal.date == datetime.now().date():
-            return meal
-        
-    return None
-
-def get_meal_by_date(date: datetime.date, is_lunch: bool) -> Meal:
+def get_meal_by_date(date: datetime.date, is_lunch: bool) -> Meal | None:
     menu = Month_Menu(is_lunch)
 
     for meal in menu.meals:
