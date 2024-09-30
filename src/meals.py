@@ -10,10 +10,11 @@ class Meal:
         self.is_lunch = is_lunch
 
 class Month_Menu:
-    def __init__(self, is_lunch: bool):
+    def __init__(self, is_lunch: bool, date: datetime.date):
         self.is_lunch = is_lunch
         self.menu_month_raw = self.get_month_raw(self.is_lunch)
         self.meals = self.get_meals()
+        self.date = date
 
     def get_meals(self):
         meals = []
@@ -48,7 +49,7 @@ class Month_Menu:
         return meals
     
     def get_month_raw(self, lucnh: bool):
-        def get(district_id: int, menu_id: int = None, date: datetime.date = None) -> dict:
+        def get(district_id: int, menu_id: int, date: datetime.date) -> dict:
             url = f"https://myschoolmenus.com/api/public/menus/{menu_id}"
 
             if date:
@@ -62,9 +63,9 @@ class Month_Menu:
             return r.json()
 
         if lucnh is True:
-            menu = get(district_id=DISTRICT_ID, menu_id=LUNCH_MENU_ID)
+            menu = get(DISTRICT_ID, LUNCH_MENU_ID, self.date)
         else:
-            menu = get(district_id=DISTRICT_ID, menu_id=BREAKFAST_MENU_ID)
+            menu = get(DISTRICT_ID, BREAKFAST_MENU_ID, self.date)
 
         menu_month_calendar = menu['data']['menu_month_calendar']
         return menu_month_calendar
@@ -73,7 +74,7 @@ def get_todays_meal(is_lunch: bool):
     return get_meal_by_date(datetime.date.now().date(), is_lunch)
 
 def get_meal_by_date(date: datetime.date, is_lunch: bool) -> Meal | None:
-    menu = Month_Menu(is_lunch)
+    menu = Month_Menu(is_lunch, date)
 
     for meal in menu.meals:
         if meal.date == date:
