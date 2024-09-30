@@ -12,7 +12,8 @@ def make_meal_embed(meal: meals.Meal) -> dict["embed": discord.Embed, "meal_foun
         embed = discord.Embed()
         embed.title = "No meal found"
         embed.color = discord.Color.red()
-        return embed, False
+        result = {"embed": embed, "meal_found": False}
+        return result
         
     meal_desc_lines = meal.desc.split("\n")
     
@@ -32,7 +33,8 @@ def make_meal_embed(meal: meals.Meal) -> dict["embed": discord.Embed, "meal_foun
     embed.color = discord.Color.green() if meal.is_lunch else discord.Color.blue()
     embed.description = stlyized_desc
     
-    return embed, True
+    result = {"embed": embed, "meal_found": True}
+    return result
 
 @client.bot.tree.command(
     name = "get_meals_by_date",
