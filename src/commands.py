@@ -74,9 +74,8 @@ async def self(
 
 @client.bot.tree.command(
     name = "get_todays_meals",
-    description = "yep",
+    description = "yep"
 )
-@app_commands.describe(date="in iso format, YYYY-MM-DD")
 async def self(
     interaction: discord.Interaction,
 ):
