@@ -71,6 +71,35 @@ async def self(
         await interaction.channel.send(embed=breakfast_embed["embed"])
 
     await interaction.edit_original_response(content="Done!")
+
+@client.bot.tree.command(
+    name = "get_todays_meals",
+    description = "yep",
+)
+@app_commands.describe(date="in iso format, YYYY-MM-DD")
+async def self(
+    interaction: discord.Interaction,
+):
+    await interaction.response.send_message("Getting...", ephemeral=False)
+
+    lunch = meals.get_todays_meals(True)
+    breakfast = meals.get_todays_meals(False)
+
+    if lunch == None and breakfast == None:
+        await interaction.edit_original_response(content="No meals found for today!")
+        return
+
+    await interaction.edit_original_response(content="Making embeds... (may take a while)")
+
+    lunch_embed = make_meal_embed(lunch)
+    breakfast_embed = make_meal_embed(breakfast)
+
+    if lunch_embed:
+        await interaction.channel.send(embed=lunch_embed["embed"])
+    if breakfast_embed:
+        await interaction.channel.send(embed=breakfast_embed["embed"])
+
+    await interaction.edit_original_response(content="Done!")
     
 @client.bot.tree.command(
     name = "config",
@@ -106,8 +135,8 @@ async def get_and_send_meals(log_channel_id: discord.TextChannel):
 
     tmr = datetime.datetime.now().date() + datetime.timedelta(days=1)
 
-    td_lunch_embed = make_meal_embed(meals.get_todays_meal(True))
-    td_breakfast_embed = make_meal_embed(meals.get_todays_meal(False))
+    td_lunch_embed = make_meal_embed(meals.get_todays_meals(True))
+    td_breakfast_embed = make_meal_embed(meals.get_todays_meals(False))
     
     tmr_lunch_embed = make_meal_embed(meals.get_meal_by_date(tmr, True))
     tmr_breakfast_embed = make_meal_embed(meals.get_meal_by_date(tmr, False))
