@@ -129,9 +129,6 @@ async def get_server_config(guild_id):
     return values
 
 async def get_and_send_meals(log_channel_id: discord.TextChannel):
-    log_channel = client.bot.get_channel(log_channel_id)
-    await log_channel.purge(limit=100)
-
     tmr = datetime.datetime.now().date() + datetime.timedelta(days=1)
 
     td_lunch_embed = make_meal_embed(meals.get_todays_meals(True))
@@ -139,6 +136,12 @@ async def get_and_send_meals(log_channel_id: discord.TextChannel):
     
     tmr_lunch_embed = make_meal_embed(meals.get_meal_by_date(tmr, True))
     tmr_breakfast_embed = make_meal_embed(meals.get_meal_by_date(tmr, False))
+
+    if not td_lunch_embed["meal_found"] and not td_breakfast_embed["meal_found"]:
+        return
+
+    log_channel = client.bot.get_channel(log_channel_id)
+    await log_channel.purge(limit=100)
 
     if td_lunch_embed["meal_found"] or td_breakfast_embed["meal_found"]:
         await log_channel.send(content="# Today's Meals:")
