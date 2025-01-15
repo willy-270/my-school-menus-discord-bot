@@ -33,8 +33,7 @@ def make_meal_embed(meal: meals.Meal) -> dict["embed": discord.Embed, "meal_foun
     embed.color = discord.Color.green() if meal.is_lunch else discord.Color.blue()
     embed.description = stlyized_desc
     
-    result = {"embed": embed, "meal_found": True}
-    return result
+    return {"embed": embed, "meal_found": True}
 
 @client.bot.tree.command(
     name = "get_meals_by_date",
@@ -136,9 +135,6 @@ async def get_and_send_meals(log_channel_id: discord.TextChannel):
     
     tmr_lunch_embed = make_meal_embed(meals.get_meal_by_date(tmr, True))
     tmr_breakfast_embed = make_meal_embed(meals.get_meal_by_date(tmr, False))
-
-    if not td_lunch_embed["meal_found"] and not td_breakfast_embed["meal_found"]:
-        return
 
     log_channel = client.bot.get_channel(log_channel_id)
     await log_channel.purge(limit=100)
