@@ -29,7 +29,7 @@ def make_meal_embed(meal: meals.Meal) -> dict["embed": discord.Embed, "meal_foun
     stlyized_desc = "\n".join(meal_desc_lines)
 
     embed = discord.Embed()
-    embed.title = f"***{'Lunch' if meal.is_lunch else 'Breakfast'}, {meal.date.strftime('%m/%d/%Y')}***"
+    embed.title = f"***{'Lunch' if meal.is_lunch else 'Breakfast'} on {meal.date.strftime("%A, %-m/%-d/%Y")}***"
     embed.color = discord.Color.green() if meal.is_lunch else discord.Color.blue()
     embed.description = stlyized_desc
     

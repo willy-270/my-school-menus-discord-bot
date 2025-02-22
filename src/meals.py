@@ -49,11 +49,15 @@ class Month_Menu:
         return meals
     
     def get_month_raw(self, lucnh: bool):
-        def get(district_id: int, menu_id: int, date: datetime.date) -> dict:
-            url = f"https://myschoolmenus.com/api/public/menus/{menu_id}"
+        def get(district_id: int, site_id: int = None, menu_id: int = None, date: datetime.date = None) -> dict:
+            url = f"https://myschoolmenus.com/api/organizations"
 
-            if date:
-                url = url + f"?menu_month={date.strftime('%Y-%m-01')}"
+            if site_id:
+                url += f"/{district_id}/sites/{site_id}"
+            elif menu_id:
+                url += f"/{district_id}/menus/{menu_id}"
+                if date:
+                    url += f"/year/{date.strftime('%Y')}/month/{date.strftime('%m')}/date_overwrites"
 
             r = requests.get(
                 url=url,
@@ -63,11 +67,11 @@ class Month_Menu:
             return r.json()
 
         if lucnh is True:
-            menu = get(DISTRICT_ID, LUNCH_MENU_ID, self.date)
+            menu = get(district_id = DISTRICT_ID, menu_id = LUNCH_MENU_ID, date = self.date)
         else:
-            menu = get(DISTRICT_ID, BREAKFAST_MENU_ID, self.date)
+            menu = get(district_id = DISTRICT_ID, menu_id = BREAKFAST_MENU_ID, date = self.date)
 
-        menu_month_calendar = menu['data']['menu_month_calendar']
+        menu_month_calendar = menu['data']
         return menu_month_calendar
 
 def get_todays_meals(is_lunch: bool):
